@@ -7,25 +7,64 @@ enum Instruction {
     Decrement,
     Output,
     Input,
-    Open,
-    Close,
+    Open(usize),
+    Close(usize),
 }
 
 fn parse(source: &str) -> Vec<Instruction> {
-    source
+    let ops: Vec<char> = source
         .chars()
-        .filter_map(|c| match c {
-            '>' => Some(Instruction::MoveRight),
-            '<' => Some(Instruction::MoveLeft),
-            '+' => Some(Instruction::Increment),
-            '-' => Some(Instruction::Decrement),
-            '.' => Some(Instruction::Output),
-            ',' => Some(Instruction::Input),
-            '[' => Some(Instruction::Open),
-            ']' => Some(Instruction::Close),
-            _ => None,
+        .filter(|c| match *c {
+            '>' | '<' | '+' | '-' | '.' | ',' | '[' | ']' => true,
+            _ => false,
         })
-        .collect()
+        .collect();
+
+    let mut instructions = vec![];
+
+    let find_matching_paren = |open, close, start_index, stop_index| {
+        let mut index = start_index;
+        let mut open_parens = 1;
+
+        while index != stop_index {
+            if ops[index] == open {
+                open_parens += 1;
+            } else if ops[index] == close {
+                open_parens -= 1;
+            }
+
+            if open_parens == 0 {
+                return index;
+            }
+
+            if start_index < stop_index {
+                index += 1;
+            } else {
+                index -= 1;
+            }
+        }
+        panic!("Unmatched parens");
+    };
+    for i in 0..ops.len() {
+        match ops[i] {
+            '>' => instructions.push(Instruction::MoveRight),
+            '<' => instructions.push(Instruction::MoveLeft),
+            '+' => instructions.push(Instruction::Increment),
+            '-' => instructions.push(Instruction::Decrement),
+            '.' => instructions.push(Instruction::Output),
+            ',' => instructions.push(Instruction::Input),
+            '[' => {
+                instructions.push(Instruction::Open(
+                    find_matching_paren('[', ']', i + 1, ops.len()),
+                ))
+            }
+            ']' => instructions.push(Instruction::Close(find_matching_paren(']', '[', i - 1, 0))),
+            _ => {}
+        };
+    }
+    instructions
+
+
 }
 
 const MEMORY_SIZE: usize = 30000;
@@ -63,7 +102,17 @@ pub fn run(source: &str, input: &str) -> String {
                 output.push(char::from_u32(memory[memory_counter] as u32).unwrap())
             }
             Instruction::Input => memory[memory_counter] = input_iter.next().unwrap() as u8,
-            _ => unimplemented!(),
+            Instruction::Open(index) => {
+                if memory[memory_counter] == 0 {
+                    instruction_counter = index;
+                }
+            }
+
+            Instruction::Close(index) => {
+                if memory[memory_counter] != 0 {
+                    instruction_counter = index;
+                }
+            }
         }
 
         instruction_counter += 1;

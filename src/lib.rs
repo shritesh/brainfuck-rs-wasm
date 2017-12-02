@@ -1,4 +1,7 @@
 use std::char;
+use std::mem;
+use std::ffi::{CStr, CString};
+use std::os::raw::{c_char, c_void};
 
 enum Instruction {
     MoveRight,
@@ -107,6 +110,38 @@ pub fn run(source: &str, input: &str) -> String {
     }
 
     output
+}
+
+#[no_mangle]
+pub extern "C" fn alloc(size: usize) -> *mut c_void {
+    let mut buf = Vec::with_capacity(size);
+    let ptr = buf.as_mut_ptr();
+    mem::forget(buf);
+    return ptr as *mut c_void;
+}
+
+#[no_mangle]
+pub extern "C" fn dealloc(ptr: *mut c_void, cap: usize) {
+    unsafe {
+        let _buf = Vec::from_raw_parts(ptr, 0, cap);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn dealloc_str(ptr: *mut c_char) {
+    unsafe {
+        let _ = CString::from_raw(ptr);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn brainfuck(source: *mut c_char, input: *mut c_char) -> *mut c_char {
+    let source_str = unsafe { CStr::from_ptr(source).to_str().unwrap() };
+    let input_str = unsafe { CStr::from_ptr(input).to_str().unwrap() };
+
+    let output = run(source_str, input_str);
+
+    CString::new(output).unwrap().into_raw()
 }
 
 #[cfg(test)]

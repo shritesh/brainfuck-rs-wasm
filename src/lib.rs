@@ -53,21 +53,17 @@ fn parse(source: &str) -> Vec<Instruction> {
             '-' => instructions.push(Instruction::Decrement),
             '.' => instructions.push(Instruction::Output),
             ',' => instructions.push(Instruction::Input),
-            '[' => {
-                instructions.push(Instruction::Open(
-                    find_matching_paren('[', ']', i + 1, ops.len()),
-                ))
-            }
+            '[' => instructions.push(Instruction::Open(
+                find_matching_paren('[', ']', i + 1, ops.len()),
+            )),
             ']' => instructions.push(Instruction::Close(find_matching_paren(']', '[', i - 1, 0))),
             _ => {}
         };
     }
     instructions
-
-
 }
 
-const MEMORY_SIZE: usize = 30000;
+const MEMORY_SIZE: usize = 30_000;
 
 pub fn run(source: &str, input: &str) -> String {
     let instructions = parse(source);
@@ -82,37 +78,29 @@ pub fn run(source: &str, input: &str) -> String {
 
     while let Some(instruction) = instructions.get(instruction_counter) {
         match *instruction {
-            Instruction::MoveRight => {
-                if memory_counter + 1 == MEMORY_SIZE {
-                    memory_counter = 0;
-                } else {
-                    memory_counter += 1;
-                }
-            }
-            Instruction::MoveLeft => {
-                if memory_counter == 0 {
-                    memory_counter = MEMORY_SIZE - 1;
-                } else {
-                    memory_counter -= 1;
-                }
-            }
+            Instruction::MoveRight => if memory_counter + 1 == MEMORY_SIZE {
+                memory_counter = 0;
+            } else {
+                memory_counter += 1;
+            },
+            Instruction::MoveLeft => if memory_counter == 0 {
+                memory_counter = MEMORY_SIZE - 1;
+            } else {
+                memory_counter -= 1;
+            },
             Instruction::Increment => memory[memory_counter] += 1,
             Instruction::Decrement => memory[memory_counter] -= 1,
             Instruction::Output => {
                 output.push(char::from_u32(memory[memory_counter] as u32).unwrap())
             }
             Instruction::Input => memory[memory_counter] = input_iter.next().unwrap_or('\0') as u8,
-            Instruction::Open(index) => {
-                if memory[memory_counter] == 0 {
-                    instruction_counter = index;
-                }
-            }
+            Instruction::Open(index) => if memory[memory_counter] == 0 {
+                instruction_counter = index;
+            },
 
-            Instruction::Close(index) => {
-                if memory[memory_counter] != 0 {
-                    instruction_counter = index;
-                }
-            }
+            Instruction::Close(index) => if memory[memory_counter] != 0 {
+                instruction_counter = index;
+            },
         }
 
         instruction_counter += 1;

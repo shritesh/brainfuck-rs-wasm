@@ -29,7 +29,7 @@ fn parse(source: &str) -> Vec<Instruction> {
         let mut index = start_index;
         let mut open_parens = 1;
 
-        while index != stop_index {
+        loop {
             if ops[index] == open {
                 open_parens += 1;
             } else if ops[index] == close {
@@ -40,13 +40,14 @@ fn parse(source: &str) -> Vec<Instruction> {
                 return index;
             }
 
-            if start_index < stop_index {
+            if index == stop_index {
+                panic!("Unmatched parens");
+            } else if start_index < stop_index {
                 index += 1;
             } else {
                 index -= 1;
             }
         }
-        panic!("Unmatched parens");
     };
     for i in 0..ops.len() {
         match ops[i] {

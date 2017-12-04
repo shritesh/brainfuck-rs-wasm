@@ -1,0 +1,64 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Rust Brainfuck Webassembly</title>
+</head>
+
+<body>
+  <h1>Rust Brainfuck WASM</h1>
+  <label for="source">Brainfuck Source</label>
+  <br>
+  <textarea name="source" id="source" cols="30" rows="10">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
+  <br>
+  <label for="inp">Input</label>
+  <br>
+  <input name="inp" id="inp" placeholder="Program Input" />
+  <button id="btn">Run</button>
+  <br>
+  <p>Output</p>
+  <pre id="output"></pre>
+
+  <script src="bundle.js"></script>
+  <script>
+    window.Module = {}
+    var Brainfuck = {
+      run: function (source, input) {
+        let src_buf = newString(Module, source);
+        let input_buf = newString(Module, input);
+        let outptr = Module.brainfuck(src_buf, input_buf);
+        let result = copyCStr(Module, outptr);
+        Module.dealloc(src_buf);
+        Module.dealloc(input_buf);
+        Module.dealloc(outptr);
+        return result;
+      }
+    }
+
+    fetchAndInstantiate("./brainfuck.wasm", {})
+      .then(mod => {
+        Module.alloc = mod.exports.alloc;
+        Module.dealloc = mod.exports.dealloc;
+        Module.dealloc_str = mod.exports.dealloc_str;
+        Module.brainfuck = mod.exports.brainfuck;
+        Module.memory = mod.exports.memory;
+
+        function run() {
+          var src = document.getElementById('source').value;
+          var inp = document.getElementById('inp').value;
+          document.getElementById('output').innerText = Brainfuck.run(src, inp);
+
+        }
+
+        document.getElementById('btn').addEventListener('click', function () {
+          run();
+        })
+
+        run()
+
+      });  </script>
+</body>
+
+</html>
